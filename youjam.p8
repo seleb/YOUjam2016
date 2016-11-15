@@ -20,9 +20,19 @@ function _init()
  sleepy_max=28
  
  pos=0
+ pos_max=25
+ stops=5
+ target=2
  direction=1
+ timer=0
  
- --music""
+ sleepy_avg=0
+ n=0
+ 
+ menu=true
+ gameover=false
+ 
+ delay=30
 end
 
 darker={
@@ -32,128 +42,210 @@ darker={
 13,2,8,9}
 
 function _draw()
- camera(0,0)
- rectfill(0,0,127,127,12)
- 
- pal()
- palt(0,false)
- palt(14,true)
- 
- for i=min(15,sleepy),1,-1 do
-  pal(i,darker[i],1)
- end
- for i=min(15,sleepy-16),1,-1 do
-  pal(i,darker[darker[i]],1)
- end
- 
- --trees
- local p=pos*100
- for i=-16,128+16,16 do
- 	srand(flr((i+p)/16))
- 	s=flr(rnd(4)+4)*2
-  spr(s, i-p%16, y-16+rnd(16), 2,2)
- end
- 
- srand(r)
- r=rnd()
- 
- if cami==0 then
-  camx=sin(time()/5+rnd()/3)
-  camy=-16+sin(time()/4+rnd()/2)
-  cami=3
- else
-  cami-=1
- end
- camera(camx,camy)
- 
- map(16,0, -8, 0, 18,18)
- map(0,0, 0, 0, 16,16)
- spr(4, x,y-32, 2,4, v<0)
- 
- s=0
- if sleepy > 0 then
-  s+=2
- end
- spr(s, x,y-32, 2,4, v<0)
- 
- if sleepy > sleepy_max/8 then
-  t=(sin(time())+1)*1.5
-  line(x+10,y-12+t,x+10,y-13,12)
-  circ(x+10,y-12+t,1,12)
- end
- 
- -- bag
- circfill(x,y-2,3,5)
- line(x-3,y-3,x+3,y-3,10)
- 
- -- v bars
- rectfill(128/3-2,0,128/3+2,127,0)
- rectfill(128/3*2-2,0,128/3*2+2,127,0)
- 
- 
- 
- -- h bars
- camera(0,0)
- rectfill(0,0,127,48,0)
- rectfill(0,80,127,127,0)
- 
- 
- -- stops
- camera(0,-40)
- line(8,0,(128-16)+8,0,7)
- line(8,0,(128-16)/100*pos+8,0,11)
- for i = 0,4 do
-  circfill((128-16)/4*i+8,0,4,0)
-  r=1
-  if abs(pos/100 - i/4) < 0.01 then
-   r+=1
+  camera(0,0)
+  rectfill(0,0,127,127,12)
+  
+  pal()
+  palt(0,false)
+  palt(14,true)
+  
+  for i=min(15,sleepy),1,-1 do
+   pal(i,darker[i],1)
   end
-  if pos/100 >= i/4 then
-   color(11)
+  for i=min(15,sleepy-16),1,-1 do
+   pal(i,darker[darker[i]],1)
+  end
+  
+  --trees/buildings
+  local p=pos*300
+  for i=-16,128+16,8 do
+  	srand(flr((i+p)/8))
+  	sx=flr(rnd(4))
+   sy=flr(rnd(2))
+   
+  	s=sx*2+8+sy*2*16
+   spr(s, i-p%8, y-16+rnd(16), 2,2)
+  end
+  
+  -- back to normal rng
+  srand(r)
+  r=rnd()
+  
+  -- shake
+  if cami==0 then
+   camx=sin(time()/5+rnd()/3)
+   camy=-16+sin(time()/4+rnd()/2)
+   cami=3
   else
-   color(7)
+   cami-=1
   end
-  circfill((128-16)/4*i+8,0,r)
-  circ((128-16)/4*i+8,0,r+2)
- end
- 
- 
- 
- -- zzzs
- if sleepy > sleepy_max/4 then
   camera(camx,camy)
-  for i=1,3 do
-   t=(sin(time()+i/6))*3
-   print_ol("z",x+t+4*i+8,y-20-6*i+t/5,0,7)
+  
+  -- interior
+  map(16,0, -8, 0, 18,18)
+  -- seats
+  map(0,0, 0, 0, 16,16)
+  
+  -- it me
+  if not gameover then
+   s=0
+   if sleepy > 0 then
+    s+=2
+   end
+   spr(s, x,y-32, 2,4)
+  
+   -- bubble
+   if sleepy > sleepy_max/8 then
+    t=(sin(time())+1)*1.5
+    line(x+10,y-12+t,x+10,y-13,12)
+    circ(x+10,y-12+t,1,12)
+   end
+  
+   -- bag
+   circfill(x,y-2,3,5)
+   line(x-3,y-3,x+3,y-3,10)
+  end
+  
+  -- v bars
+  rectfill(128/3-2,0,128/3+2,127,0)
+  rectfill(128/3*2-2,0,128/3*2+2,127,0)
+  
+  
+  
+  -- h bars
+  camera(0,0)
+  rectfill(0,0,127,48,0)
+  rectfill(0,80,127,127,0)
+  
+  
+  -- stops
+  camera(0,-40)
+  line(8,0,(128-16)+8,0,7)
+  line(8,0,(128-16)/pos_max*pos+8,0,11)
+  for i = 0,(stops-1) do
+   circfill((128-16)/(stops-1)*i+8,0,4,0)
+   r=1
+   if abs(pos/pos_max - i/(stops-1)) < 0.03 then
+    r+=1
+    color(11)
+   else
+    color(7)
+   end
+   circfill((128-16)/(stops-1)*i+8,0,r)
+   circ((128-16)/(stops-1)*i+8,0,r+2)
+  end
+  
+  -- target
+  circfill((128-16)*target/(stops-1)+8, -7, 1, 7)
+  line((128-16)*target/(stops-1)+8-1, -8, (128-16)*target/(stops-1)+8+1, -8, 7)
+   
+   
+  -- zzzs
+  if sleepy > sleepy_max/4 then
+   camera(camx,camy)
+   for i=1,3 do
+    t=(sin(time()+i/6))*3
+    print_ol("z",x+t+4*i+8,y-20-6*i+t/5,0,7)
+   end
+  end
+  
+  --- timer
+  camera(0,0)
+  print_c(convert(timer/(pos_max*100)*15),64,24,7)
+  
+  --print_c(sleepy_avg.."",64,16,7)
+
+
+ -- menus
+ 
+  camera(0,-32)
+ if menu then
+  print_c("commute",64,60,7)
+  if delay < 0 then
+   print("\x8e\x8b\x94\x83\x91\x97",64-24,68,7)
+   if delay < -30 then
+    print_c("try to get some rest",64,76,7)
+    print_c("don't miss your stop",64,84,7)
+   end
+  end
+ elseif gameover then
+  print_c("you got off at your stop",64,60,7)
+  if delay < 60 then
+   if timer/(pos_max*100)*15-7.5 < 0.5 then
+    print_c("on time",64,68,7)
+   else
+    print_c(convert(timer/(pos_max*100)*15-7.5).." minutes late",64,68,7)
+   end
+   
+   if delay < 30 then
+    if sleepy_avg > 0.8 then
+     s="and well-rested"
+    elseif sleepy_avg > 0.5 then
+     s="and mostly awake"
+    elseif sleepy_avg > 0.25 then
+     s="and barely awake"
+    else
+     s="and immediately fell asleep"
+    end
+    print_c(s, 64, 76, 7)
+    
+    if delay < 0 then
+     print("\x8e\x8b\x94\x83\x91\x97",64-24,84,7)
+    end
+   end
   end
  end
 end
 
 function _update()
- v=0
- if btn"0" then v-=1 end
- if btn"1" then v+=1 end
- 
- if btn"2" then
-  sleepy+=1
- else
-  sleepy-=1
- end
- sleepy=mid(0,sleepy,sleepy_max)
- 
- pos+=sleepy/100*direction
- 
- if pos > 100 then
-  pos=100
-  direction=-1
- elseif pos < 0 then
-  pos=0
-  direction=1
- end
- 
- x+=v
-end
 
+ poke(0x3200+65,10-sleepy/sleepy_max*8)
+ delay-=1
+ if menu then
+  if delay<0 and btnp()!=0 then
+   sfx"1"
+   music""
+   menu=false
+  end
+ elseif gameover then
+  if delay<0 and btnp()!=0 then
+   run()
+  end
+ else
+  v=0
+  printh(btn())
+  if btn()==0 then
+   sleepy-=1
+  else
+   sleepy+=1
+  end
+  sleepy=mid(0,sleepy,sleepy_max)
+  
+  pos+=max(0.33,sleepy)/100*direction
+  timer+=max(0.33,sleepy)
+  
+  if pos > pos_max then
+   pos=pos_max
+   direction=-1
+  elseif pos < 0 then
+   pos=0
+   direction=1
+  end
+  
+  sleepy_avg=(sleepy_avg*n+sleepy/sleepy_max)/(n+1)
+  n+=1
+  
+  if
+   abs(pos/pos_max - target/(stops-1)) < 0.03
+   and sleepy==0
+  then
+   sfx"1"
+   music"-1"
+   gameover=true
+   delay=90
+  end
+ end
+end
 
 function print_ol(s,x,y,c1,c2)
  for u=x-1,x+1 do
@@ -162,6 +254,27 @@ function print_ol(s,x,y,c1,c2)
  end
  end
  print(s,x,y,c2)
+end
+
+function print_c(s,x,y,c)
+ print(s,x-#s*2,y,c)
+end
+
+
+function convert(t)
+ local s=t
+ local d=s%1
+ s=flr(s)
+ if s < 10 then
+  s="0"..s
+ else
+  s=""..s
+ end
+ d=flr(d*60)
+ if d < 10 then
+  d="0"..d
+ end
+ return sub(s,1,3)..":"..d
 end
 __gfx__
 eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee5555555555555555eeeeeee33eeeeeeeeeeeeeeeeeeeeeeeeeeeeeee33eeeeeeeeeeeeebbeeeeeee
@@ -174,28 +287,28 @@ e000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee7ceeeeceeeeeeec7eeeee333333eeeee
 e000000000000000eeeee00000000eeeeeeeeeeeeeeeeeee7ceeeceeeeeeeec7eeee33333333eeeeeeeeebbbbbbeeeeeeeee333333333eeeeeeeebbbbbbeeeee
 e000004444440000eeee0000000000eeeeeeeeeeeeeeeeee7ceeceeeeeeeeec7eee333333333eeeeeeeebbbbbbbeeeeeeeee3333333333eeeeeebbbbbbbbeeee
 e00455555555550eeee000000000000eeeeeeeeeeeeeeeee7ceceeeeeeeeecc7eee333333333eeeeeeeebbbbbbbbeeeeeee333333333333eeeebbbbbbbbbbeee
-ee040457754575eeeee0000000000000eeeeeeeeeeeeeeee7cceeeeeeeeecec7ee33333333333eeeeeebbbbbbbbbeeeeee33333333333333eeebbbbbbbbbbbee
-eee00045544455eeeee0000000000000eeeeeeeeeeeeeeee7ceeeceeeeeceec7ee33333333333eeeeeebbbbbbbbbbeeeeeee33333333eeeeeebbbbbbbbbbbbbe
-eeee0004444440eeeee0000000000000eeeeeeeeeeeeeeee7ceeceeeeeceeec7e3333333333333eeeebbbbbbbbbbbbeeeee3333333333eeeebbbbbbbbbbbeeee
-eee55000000000eeeee0000000000000eeeeeeeeeeeeeeee7ceceeeeeceeeec7e3333333333333eeeebbbbbbbbbbbbeeee333333333333eeeeebbbbbbbbbeeee
-ee55550004440eeeee50000000000000eeeeeeeeeeeeeeee77cccccccccccc77333333333333333eebbbbbbbbbbbbbbee33333333333333eeeebbbbbbbbbbeee
+ee040457754575eeee00000000000000eeeeeeeeeeeeeeee7cceeeeeeeeecec7ee33333333333eeeeeebbbbbbbbbeeeeee33333333333333eeebbbbbbbbbbbee
+eee00045544455eeee00000000000000eeeeeeeeeeeeeeee7ceeeceeeeeceec7ee33333333333eeeeeebbbbbbbbbbeeeeeee33333333eeeeeebbbbbbbbbbbbbe
+eeee0004444440eeee00000000000000eeeeeeeeeeeeeeee7ceeceeeeeceeec7e3333333333333eeeebbbbbbbbbbbbeeeee3333333333eeeebbbbbbbbbbbeeee
+eee55000000000eeee00000000000000eeeeeeeeeeeeeeee7ceceeeeeceeeec7e3333333333333eeeebbbbbbbbbbbbeeee333333333333eeeeebbbbbbbbbeeee
+ee55550004440eeeee00000000000000eeeeeeeeeeeeeeee77cccccccccccc77333333333333333eebbbbbbbbbbbbbbee33333333333333eeeebbbbbbbbbbeee
 e555551000000eeee55000000000000eeeeeeeeeeeeeeeee77777777777777773333333333333333bbbbbbbbbbbbbbbb3333333333333333eebbbbbbbbbbbeee
-e55555110000eeeee55500000000000ee66666666666eeee7777777777777777eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
-e5555511555eeeeee5555000000000ee6611111111166eee7777777777777777eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
-e5555511555eeeeee555550000000eee6111111111116eee7777777777777777eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
-e5555511555eeeeee5555511555eeeee6111111111116eee7777777777777777eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
-555555115555eeee555555115555eeee6111111111116eee7777777777777777eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
-555555115555eeee555555115555eeee6111111111116eee7777777777777777eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
-e44555dd544eeeeee44555dd544eeeee6111111111116eee7777777777777777eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
-e44ddddddddeeeeee44ddddddddeeeee6666666666666eee7777777777777777eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
-eeeddddeedddeeeeeeeddddeedddeeee61111111111166ee7777777777777777eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
-eeeeedddeeddeeeeeeeeedddeeddeeee66111111111116ee7777777777777777eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
-eeeeeeddeeddeeeeeeeeeeddeeddeeee66666666666666ee7777777777777777eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
-eeeeeeddeeddeeeeeeeeeeddeeddeeee66e66eeee66e66ee5555555555555555eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
-eeeeee555e555eeeeeeeee555e555eee66e66eeee66e66ee7777777777777777eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
-eeeeee555e5555eeeeeeee555e5555eeeee66eeeeeee66ee7777777777777777eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
-eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee6767676767676767eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
-eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee5555555555555555eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+e55555110000eeeee55000000000000ee66666666666eeee7777777777777777ee555555555555eeee666666666666eeeee44eeeeeeeeeeeeeeeee44ee4eeeee
+e5555511555eeeeee5550000000000ee6611111111166eee7777777777777777ee555555555555eeee666666666666eeeee44eeeeeeeeeeeeeeeeee44e4eeeee
+e5555511555eeeeee555500000000eee6111111111116eee7777777777777777ee555555555555eeee666666666666eeeee44eeeeeeeeeeeeeeeeee4444eeeee
+e5555511555eeeeee5555511555eeeee6111111111116eee7777777777777777ee555555555555eeee666666666666eeeee44eeeeeeeeeeeeeeeeeee444eeeee
+555555115555eeee555555115555eeee6111111111116eee7777777777777777ee555555555555eeee666666666666eeeee44eeeeeeeeeeeeeeee4eee44eee4e
+555555115555eeee555555115555eeee6111111111116eee7777777777777777ee555555555555eeee666666666666eeeee44eeeeeeeeeeeeeeeee4ee44ee4ee
+e44555dd544eeeeee44555dd544eeeee6111111111116eee7777777777777777ee555555555555eeee666666666666eeeee44eeeeeeeeeeeeeeeeee4444444ee
+e44ddddddddeeeeee44ddddddddeeeee6666666666666eee7777777777777777ee555555555555eeee666666666666eeeee44eeeeeeeeeeeeeeeeee444444eee
+eeeddddeedddeeeeeeeddddeedddeeee61111111111166ee7777777777777777ee555555555555eeee666666666666eeeee44eeeeeeeeeeeeeeeeeee4444eeee
+eeeeedddeeddeeeeeeeeedddeeddeeee66111111111116ee7777777777777777ee555555555555eeee666666666666eeeee44eeeeeeeeeeeeeeeeeee4444eeee
+eeeeeeddeeddeeeeeeeeeeddeeddeeee66666666666666ee7777777777777777ee555555555555eeee666666666666eeeee44eeeeeeeeeeeeeeeeeee444eeeee
+eeeeeeddeeddeeeeeeeeeeddeeddeeee66e66eeee66e66ee5555555555555555ee555555555555eeee666666666666eeeee44eeeeeeeeeeeeeeeeeee444eeeee
+eeeeee555e555eeeeeeeee555e555eee66e66eeee66e66ee7777777777777777ee555555555555eeee666666666666eeeee44eeeeeeeeeeeeee4eeee444eeeee
+eeeeee555e5555eeeeeeee555e5555eeeee66eeeeeee66ee7777777777777777ee555555555555eeee666666666666eeeee44eeeeeeeeeeeeeee4eee444eeeee
+eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee6767676767676767ee555555555555eeee666666666666eeeee44eeeeeeeeeeeeeee4eee44ee4eee
+eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee5555555555555555ee555555555555eeee666666666666eeeee44eeeeeeeeeeeeeeee4ee44ee4eee
 eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
 eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
 eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
@@ -329,8 +442,8 @@ __map__
 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __sfx__
-00640020036140d6111a6111f6110861107611106111d611236110b6110b6150c614146111a61112611126111b611226111a6110d6110b6150b6140e61111611086110b615126141d61112611276112161114615
-001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+010a00010011300103001030010300103001030010300103001030010300103001030010300103001030010300103001030010300103001030010300103001030010300103001030010300103001030010300103
+00020000057110a7210c7310a73104731037210a7210b71107711047111a701007010070100701007010070100701007010070100701007010070100701007010070100701007010070100701007010070100701
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
