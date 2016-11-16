@@ -26,7 +26,7 @@ function _init()
  direction=1
  timer=0
  
- sleepy_avg=0
+ sleepy_avg=1
  n=0
  
  menu=true
