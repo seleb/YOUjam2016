@@ -1,7 +1,8 @@
 pico-8 cartridge // http://www.pico-8.com
 version 8
 __lua__
-
+--commute
+--made by sean for #youjam
 
 function _init()
  palt(0,false)
